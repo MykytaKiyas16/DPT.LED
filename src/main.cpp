@@ -32,76 +32,54 @@
  * ourselves. It gives us pinMode(), digitalWrite(), delay(), etc.
  */
 #include <Arduino.h>
+#include <TM1637Display.h>
 
-// ---------------------------------------------------------------------------
-// Global variables
-// Declared OUTSIDE any function, so setup(), loop() and any other
-// function can use them. Their values are kept between loop() runs.
-// ---------------------------------------------------------------------------
+// Ligacoes do Grove 4-Digit Display
+#define CLK 2
+#define DIO 3
 
-// The pin our LED is connected to. "const" means it can never change.
-const int ledPin = 13;
+TM1637Display display(CLK, DIO);
 
-// An "int" stores a whole number (no decimals), e.g. -3, 0, 500.
-// Here it holds how long the LED stays on/off, in milliseconds.
-int blinkDelay = 500;
+// Tempo inicial: 5 minutos
+int minutos = 5;
+int segundos = 0;
 
-// A "bool" (boolean) stores only two values: true or false.
-// It remembers whether the LED should be on (true) or off (false).
-// We start with the LED off.
-bool ledIsOn = false;
+unsigned long tempoAnterior = 0;
 
-// ---------------------------------------------------------------------------
-// A dummy function
-// Functions let us give a name to a block of code and reuse it.
-//   void          -> this function does not return any value
-//   sayHello      -> the function's name
-//   ()            -> it takes no inputs (parameters)
-// It isn't needed for blinking - it's here to show how functions work.
-// ---------------------------------------------------------------------------
-void sayHello()
-{
-  Serial.println("Hello from sayHello()!");
+void setup() {
+    display.setBrightness(7);
+    display.clear();
+
+    // Mostrar 05:00 ao iniciar
+    display.showNumberDecEx(500, 0b01000000, true);
 }
 
-// ---------------------------------------------------------------------------
-// setup(): runs once at the start
-// ---------------------------------------------------------------------------
-void setup()
-{
-  // Tell the board that ledPin is an OUTPUT (we send voltage out of it).
-  pinMode(ledPin, OUTPUT);
+void loop() {
 
-  // Start serial communication at 9600 baud so we can print messages.
-  // Open the PlatformIO Serial Monitor to read them (speed must match:
-  // see monitor_speed in platformio.ini).
-  Serial.begin(9600);
+    unsigned long tempoAtual = millis();
 
-  // Call (use) our dummy function.
-  sayHello();
-}
+    // Atualizar a cada segundo
+    if (tempoAtual - tempoAnterior >= 1000) {
+        tempoAnterior += 1000;
 
-// ---------------------------------------------------------------------------
-// loop(): runs forever
-// ---------------------------------------------------------------------------
-void loop()
-{
-  // Flip the boolean: "!" means NOT, so true becomes false and
-  // false becomes true. Each time loop() runs, the state swaps.
-  ledIsOn = !ledIsOn;
+        // Contagem decrescente
+        if (minutos > 0 || segundos > 0) {
 
-  // Use the boolean to decide what to do.
-  if (ledIsOn)
-  {
-    digitalWrite(ledPin, HIGH); // HIGH = 5V on the pin -> LED on
-    Serial.println("LED is ON");
-  }
-  else
-  {
-    digitalWrite(ledPin, LOW); // LOW = 0V on the pin -> LED off
-    Serial.println("LED is OFF");
-  }
+            if (segundos == 0) {
+                minutos--;
+                segundos = 59;
+            } else {
+                segundos--;
+            }
+        }
+    }
 
-  // Wait blinkDelay milliseconds before loop() runs again.
-  delay(blinkDelay);
+    // Mostrar MM:SS
+    int numero = minutos * 100 + segundos;
+
+    display.showNumberDecEx(
+        numero,
+        0b01000000,
+        true
+    );
 }
